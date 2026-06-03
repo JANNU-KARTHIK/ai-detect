@@ -1,5 +1,6 @@
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -74,17 +75,6 @@ def extract_metadata(path):
     return metadata
 
 # =========================================================
-# HOME
-# =========================================================
-
-@app.get("/")
-def home():
-
-    return {
-        "message": "AI Lens Backend Running"
-    }
-
-# =========================================================
 # SCAN ROUTE
 # =========================================================
 
@@ -93,7 +83,8 @@ async def scan_media(file: UploadFile = File(...)):
 
     file_path = f"{UPLOAD_FOLDER}/{file.filename}"
 
-    # Save upload
+    # SAVE FILE
+
     with open(file_path, "wb") as buffer:
 
         shutil.copyfileobj(file.file, buffer)
@@ -125,12 +116,6 @@ async def scan_media(file: UploadFile = File(...)):
             )
 
             result = response.json()
-
-            print(result)
-
-            # =============================================
-            # AI SCORE
-            # =============================================
 
             ai_score = result["type"]["ai_generated"]
 
@@ -235,6 +220,7 @@ async def scan_media(file: UploadFile = File(...)):
                 frame_index += 1
 
                 # Analyze every 30th frame
+
                 if frame_index % 30 == 0:
 
                     checked_frames += 1
@@ -253,17 +239,16 @@ async def scan_media(file: UploadFile = File(...)):
 
                     noise = np.std(gray)
 
-                    # Suspicious smoothness
+                    # Suspicious checks
+
                     if brightness > 180:
 
                         suspicious_frames += 1
 
-                    # Very smooth suspicious
                     if sharpness < 40:
 
                         suspicious_frames += 1
 
-                    # Low noise suspicious
                     if noise < 18:
 
                         suspicious_frames += 1
@@ -344,17 +329,37 @@ async def scan_media(file: UploadFile = File(...)):
         return {
             "error": "Unsupported file format"
         }
-# =========================================
+
+# =========================================================
 # FRONTEND HOSTING
-# =========================================
+# =========================================================
+
+frontend_path = os.path.join(
+    os.path.dirname(__file__),
+    "../frontend/dist"
+)
+
+assets_path = os.path.join(
+    frontend_path,
+    "assets"
+)
 
 app.mount(
     "/assets",
-    StaticFiles(directory="../frontend/dist/assets"),
+    StaticFiles(directory=assets_path),
     name="assets"
 )
+
+# =========================================================
+# REACT APP ROUTE
+# =========================================================
 
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
 
-    return FileResponse("../frontend/dist/index.html")
+    index_path = os.path.join(
+        frontend_path,
+        "index.html"
+    )
+
+    return FileResponse(index_path)
