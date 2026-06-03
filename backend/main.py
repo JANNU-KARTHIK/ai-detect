@@ -1,3 +1,5 @@
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -342,3 +344,17 @@ async def scan_media(file: UploadFile = File(...)):
         return {
             "error": "Unsupported file format"
         }
+# =========================================
+# FRONTEND HOSTING
+# =========================================
+
+app.mount(
+    "/assets",
+    StaticFiles(directory="../frontend/dist/assets"),
+    name="assets"
+)
+
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+
+    return FileResponse("../frontend/dist/index.html")
